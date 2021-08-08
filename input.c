@@ -592,7 +592,6 @@ rl_getc (FILE *stream)
 
 /* fprintf(stderr, "rl_getc: result = %d errno = %d\n", result, errno); */
 
-handle_error:
       /* If the error that we received was EINTR, then try again,
 	 this is simply an interrupted system call to read ().  We allow
 	 the read to be interrupted if we caught SIGHUP, SIGTERM, or any
