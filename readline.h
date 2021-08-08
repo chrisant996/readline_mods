@@ -474,6 +474,10 @@ extern int rl_set_paren_blink_timeout PARAMS((int));
 
 extern void rl_clear_history PARAMS((void));
 
+/* Returns true if rl_operate_and_get_next has set a saved history
+   offset, so that the host knows not to rearrange history entries yet. */
+extern int rl_has_saved_history PARAMS((void));
+
 /* Undocumented. */
 extern int rl_maybe_save_line PARAMS((void));
 extern int rl_maybe_unsave_line PARAMS((void));
