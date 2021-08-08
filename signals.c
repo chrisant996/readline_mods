@@ -64,7 +64,7 @@
 
 /* This typedef is equivalent to the one for Function; it allows us
    to say SigHandler *foo = signal (SIGKILL, SIG_IGN); */
-typedef RETSIGTYPE SigHandler ();
+typedef RETSIGTYPE SigHandler (int);
 
 #if defined (HAVE_POSIX_SIGNALS)
 typedef struct sigaction sighandler_cxt;
@@ -266,8 +266,10 @@ _rl_handle_signal (int sig)
     case SIGQUIT:
 #endif
 
+#if defined (HAVE_POSIX_SIGNALS)
       if (block_sig)
 	sigprocmask (SIG_BLOCK, &set, &oset);
+#endif
 
       rl_echo_signal_char (sig);
       rl_cleanup_after_signal ();
