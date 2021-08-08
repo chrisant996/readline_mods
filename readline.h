@@ -487,6 +487,10 @@ extern char *rl_filename_completion_function PARAMS((const char *, int));
 
 extern int rl_completion_mode PARAMS((rl_command_func_t *));
 
+/* Path separators. */
+extern int rl_is_path_separator PARAMS((char c));
+extern char *rl_last_path_separator PARAMS((const char *string));
+
 #if 0
 /* Backwards compatibility (compat.c).  These will go away sometime. */
 extern void free_undo_list PARAMS((void));
@@ -603,6 +607,12 @@ extern rl_hook_func_t *rl_signal_event_hook;
    there is data available from the current input source. */
 extern rl_hook_func_t *rl_input_available_hook;
 
+/* If non-zero, adds backslash as a path separator. */
+extern int rl_backslash_path_sep;
+
+/* Filename completion inserts this as the path separator character. */
+extern char rl_preferred_path_separator;
+
 /* The address of the function to call to fetch a character from the current
    Readline input stream */
 extern rl_getc_func_t *rl_getc_function;
@@ -685,6 +695,7 @@ extern rl_completion_func_t *rl_attempted_completion_function;
    completer routine.  The initial contents of this variable is what
    breaks words in the shell, i.e. "n\"\\'`@$>". */
 extern const char *rl_basic_word_break_characters;
+extern const char *rl_basic_word_break_characters_without_backslash;
 
 /* The list of characters that signal a break between words for
    rl_complete_internal.  The default list is the contents of
