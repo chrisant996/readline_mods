@@ -2548,6 +2548,15 @@ _rl_get_keyname (int key)
       keyname[i++] = (c / 8) + '0';
       c = (c % 8) + '0';
     }
+  /* The modern encoding is UTF8, not ISO Latin 1.  Print octal escape
+     sequences so the output is valid UTF8.  This changes C. */
+  else if (c >= 160)
+    {
+      keyname[i++] = '\\';
+      keyname[i++] = '0' + ((((unsigned char)c) >> 6) & 0x07);
+      keyname[i++] = '0' + ((((unsigned char)c) >> 3) & 0x07);
+      c = (c % 8) + '0';
+    }
 
   /* Now, if the character needs to be quoted with a backslash, do that. */
   if (c == '\\' || c == '"')
