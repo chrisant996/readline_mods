@@ -264,11 +264,11 @@ static void
 _rl_nsearch_abort (_rl_search_cxt *cxt)
 {
   rl_maybe_unsave_line ();
+  rl_restore_prompt ();
   rl_clear_message ();
   rl_point = cxt->save_point;
   rl_mark = cxt->save_mark;
   _rl_fix_point (1);
-  rl_restore_prompt ();
 
   RL_UNSETSTATE (RL_STATE_NSEARCH);
 }
