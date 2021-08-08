@@ -555,6 +555,7 @@ extern rl_hook_func_t *_rl_internal_startup_hook;
 
 /* search.c */
 extern _rl_search_cxt *_rl_nscxt;
+extern int _rl_search_case_fold;
 
 /* signals.c */
 extern int volatile _rl_caught_signal;
