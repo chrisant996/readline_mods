@@ -511,6 +511,11 @@ readline_internal_teardown (int eof)
 void
 _rl_internal_char_cleanup (void)
 {
+  if (_rl_keep_mark_active)
+    _rl_keep_mark_active = 0;
+  else if (rl_mark_active_p ())
+    rl_deactivate_mark ();
+
 #if defined (VI_MODE)
   /* In vi mode, when you exit insert mode, the cursor moves back
      over the previous character.  We explicitly check for that here. */
@@ -667,11 +672,6 @@ readline_internal_charloop (void)
 	 a prefix command, so nothing has changed yet. */
       if (rl_pending_input == 0 && lk == _rl_last_command_was_kill)
 	_rl_last_command_was_kill = 0;
-
-      if (_rl_keep_mark_active)
-        _rl_keep_mark_active = 0;
-      else if (rl_mark_active_p ())
-        rl_deactivate_mark ();
 
       _rl_internal_char_cleanup ();
 
