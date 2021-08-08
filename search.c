@@ -678,6 +678,34 @@ rl_history_search_reinit (int flags)
   _rl_free_saved_history_line ();
 }
 
+static int
+is_history_last_func (rl_command_func_t func)
+{
+  return (rl_last_func == func ||
+          (rl_last_func == rl_remove_history &&
+           rl_remove_history_last_func == func));
+}
+
+/* Get the history search position, or -1 if there's no search. */
+int
+rl_get_history_search_pos ()
+{
+  if (rl_history_search_len > 0 &&
+      (is_history_last_func(rl_history_search_backward) ||
+       is_history_last_func(rl_history_search_forward) ||
+       is_history_last_func(rl_history_substr_search_backward) ||
+       is_history_last_func(rl_history_substr_search_forward)))
+    return rl_history_search_pos;
+  return -1;
+}
+
+/* Get the history search flags. */
+int
+rl_get_history_search_flags ()
+{
+  return rl_history_search_flags;
+}
+
 /* Search forward in the history for the string of characters
    from the start of the line to rl_point.  This is a non-incremental
    search.  The search is anchored to the beginning of the history line. */
@@ -687,8 +715,8 @@ rl_history_search_forward (int count, int ignore)
   if (count == 0)
     return (0);
 
-  if (rl_last_func != rl_history_search_forward &&
-      rl_last_func != rl_history_search_backward)
+  if (!is_history_last_func (rl_history_search_forward) &&
+      !is_history_last_func (rl_history_search_backward))
     rl_history_search_reinit (ANCHORED_SEARCH);
 
   if (rl_history_search_len == 0)
@@ -705,8 +733,8 @@ rl_history_search_backward (int count, int ignore)
   if (count == 0)
     return (0);
 
-  if (rl_last_func != rl_history_search_forward &&
-      rl_last_func != rl_history_search_backward)
+  if (!is_history_last_func (rl_history_search_forward) &&
+      !is_history_last_func (rl_history_search_backward))
     rl_history_search_reinit (ANCHORED_SEARCH);
 
   if (rl_history_search_len == 0)
@@ -724,8 +752,8 @@ rl_history_substr_search_forward (int count, int ignore)
   if (count == 0)
     return (0);
 
-  if (rl_last_func != rl_history_substr_search_forward &&
-      rl_last_func != rl_history_substr_search_backward)
+  if (!is_history_last_func (rl_history_substr_search_forward) &&
+      !is_history_last_func (rl_history_substr_search_backward))
     rl_history_search_reinit (NON_ANCHORED_SEARCH);
 
   if (rl_history_search_len == 0)
@@ -742,8 +770,8 @@ rl_history_substr_search_backward (int count, int ignore)
   if (count == 0)
     return (0);
 
-  if (rl_last_func != rl_history_substr_search_forward &&
-      rl_last_func != rl_history_substr_search_backward)
+  if (!is_history_last_func (rl_history_substr_search_forward) &&
+      !is_history_last_func (rl_history_substr_search_backward))
     rl_history_search_reinit (NON_ANCHORED_SEARCH);
 
   if (rl_history_search_len == 0)

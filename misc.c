@@ -48,6 +48,7 @@
 /* Some standard library routines. */
 #include "readline.h"
 #include "history.h"
+#include "histlib.h" /* for ANCHORED_SEARCH */
 
 #include "rlprivate.h"
 #include "rlshell.h"
@@ -68,6 +69,11 @@ _rl_arg_cxt _rl_argcxt;
 /* Saved target point for when _rl_history_preserve_point is set.  Special
    value of -1 means that point is at the end of the line. */
 int _rl_history_saved_point = -1;
+
+/* If non-null, called when rl_add_history adds a history line. */
+rl_history_hook_func_t *rl_add_history_hook = (rl_history_hook_func_t *)NULL;
+/* If non-null, called when rl_remove_history removes a history line. */
+rl_history_hook_func_t *rl_remove_history_hook = (rl_history_hook_func_t *)NULL;
 
 /* **************************************************************** */
 /*								    */
@@ -647,7 +653,7 @@ static int saved_history_logical_offset = -1;
 #define HISTORY_FULL() (history_is_stifled () && history_length >= history_max_entries)
 
 static int
-set_saved_history ()
+set_saved_history (void)
 {
   int absolute_offset, count;
 
@@ -675,6 +681,73 @@ rl_operate_and_get_next (count, c)
 
   _rl_saved_internal_startup_hook = _rl_internal_startup_hook;
   _rl_internal_startup_hook = set_saved_history;
+
+  return 0;
+}
+
+/* Add the current line to the history. */
+int
+rl_add_history (int count, int key)
+{
+  if (!rl_end)
+    {
+      rl_ding ();
+      return 0;
+    }
+  add_history (rl_line_buffer);
+  if (rl_add_history_hook)
+    (*rl_add_history_hook) (history_length - 1, rl_line_buffer);
+  using_history ();
+  rl_delete_text (0, rl_end);
+  rl_point = 0;
+  return 0;
+}
+
+/* Remove the current line from the history.  If the line is modified or
+   empty,just ding. */
+int
+rl_remove_history (int count, int key)
+{
+  int search_pos = rl_get_history_search_pos();
+  int old_where = search_pos >= 0 ? search_pos : where_history();
+
+  /* The history search commands use rl_last_func to identify the active
+     history search mode.  rl_remove_history messes that up, so it gives
+     them a way to know what rl_last_func was before rl_remove_history. */
+  if (rl_last_func != rl_remove_history)
+    rl_remove_history_last_func = rl_last_func;
+
+  HIST_ENTRY **list = history_list ();
+  HIST_ENTRY *hist = list ? list[old_where] : 0;
+  if (!hist || strcmp (rl_line_buffer, hist->line))
+    {
+      rl_ding ();
+      return 0;
+    }
+
+  if (search_pos >= 0)
+    {
+      int flags = rl_get_history_search_flags();
+      if (flags & ANCHORED_SEARCH)
+        rl_history_search_backward (1, key);
+      else
+        rl_history_substr_search_backward (1, key);
+    }
+  else
+    rl_get_previous_history (1, key);
+
+  hist = remove_history (old_where);
+  if (rl_remove_history_hook)
+    (*rl_remove_history_hook) (old_where, hist->line);
+  free_history_entry (hist);
+
+  search_pos = rl_get_history_search_pos();
+  int new_where = search_pos >= 0 ? search_pos : where_history();
+  if (!history_length || rl_get_history_search_pos() == old_where)
+    {
+      rl_replace_line ("", 1);
+      using_history ();
+    }
 
   return 0;
 }

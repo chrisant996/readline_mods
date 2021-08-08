@@ -59,6 +59,7 @@ int funmap_program_specific_entry_start;
 static const FUNMAP default_funmap[] = {
   { "abort", rl_abort },
   { "accept-line", rl_newline },
+  { "add-history", rl_add_history },
   { "arrow-key-prefix", rl_arrow_keys },
   { "backward-byte", rl_backward_byte },
   { "backward-char", rl_backward_char },
@@ -129,6 +130,7 @@ static const FUNMAP default_funmap[] = {
   { "quoted-insert", rl_quoted_insert },
   { "re-read-init-file", rl_re_read_init_file },
   { "redraw-current-line", rl_refresh_line},
+  { "remove-history", rl_remove_history },
   { "reverse-search-history", rl_reverse_search_history },
   { "revert-line", rl_revert_line },
   { "self-insert", rl_insert },

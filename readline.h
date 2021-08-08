@@ -129,11 +129,13 @@ extern int rl_char_search PARAMS((int, int));
 extern int rl_backward_char_search PARAMS((int, int));
 
 /* Bindable commands for readline's interface to the command history. */
+extern int rl_add_history PARAMS((int, int));
 extern int rl_beginning_of_history PARAMS((int, int));
 extern int rl_end_of_history PARAMS((int, int));
 extern int rl_get_next_history PARAMS((int, int));
 extern int rl_get_previous_history PARAMS((int, int));
 extern int rl_operate_and_get_next PARAMS((int, int));
+extern int rl_remove_history PARAMS((int, int));
 
 /* Bindable commands for managing the mark and region. */
 extern int rl_set_mark PARAMS((int, int));
@@ -606,6 +608,11 @@ extern rl_hook_func_t *rl_signal_event_hook;
 /* The address of a function to call if Readline needs to know whether or not
    there is data available from the current input source. */
 extern rl_hook_func_t *rl_input_available_hook;
+
+/* Called when rl_add_history adds a history line. */
+extern rl_history_hook_func_t *rl_add_history_hook;
+/* Called when rl_remove_history removes a history line. */
+extern rl_history_hook_func_t *rl_remove_history_hook;
 
 /* If non-zero, adds backslash as a path separator. */
 extern int rl_backslash_path_sep;

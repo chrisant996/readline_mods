@@ -380,6 +380,8 @@ extern int _rl_restore_tty_signals PARAMS((void));
 /* search.c */
 extern int _rl_nsearch_callback PARAMS((_rl_search_cxt *));
 extern int _rl_nsearch_cleanup PARAMS((_rl_search_cxt *, int));
+extern int rl_get_history_search_pos PARAMS((void));
+extern int rl_get_history_search_flags PARAMS((void));
 
 /* signals.c */
 extern void _rl_signal_handler PARAMS((int));
@@ -543,6 +545,7 @@ extern Keymap _rl_keymap;
 extern FILE *_rl_in_stream;
 extern FILE *_rl_out_stream;
 extern int _rl_last_command_was_kill;
+extern rl_command_func_t *rl_remove_history_last_func;
 extern int _rl_eof_char;
 extern int _rl_eof_found;
 extern procenv_t _rl_top_level;
