@@ -193,6 +193,10 @@ int _rl_echoing_p = 0;
 char *rl_prompt = (char *)NULL;
 int rl_visible_prompt_length = 0;
 
+/* Optional right-justified prompt string. */
+char *rl_rprompt = (char *)NULL;
+int rl_visible_rprompt_length = 0;
+
 /* Set to non-zero by calling application if it has already printed rl_prompt
    and does not want readline to do it the first time. */
 int rl_already_prompted = 0;
