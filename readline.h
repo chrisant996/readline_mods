@@ -299,6 +299,8 @@ extern char *readline PARAMS((const char *));
 
 extern int rl_set_prompt PARAMS((const char *));
 extern int rl_expand_prompt PARAMS((char *));
+extern const char *rl_get_local_prompt_prefix PARAMS((void));
+extern int rl_set_rprompt PARAMS((const char *));
 
 extern int rl_initialize PARAMS((void));
 
@@ -548,6 +550,11 @@ extern char *rl_prompt;
 /* The prompt string that is actually displayed by rl_redisplay.  Public so
    applications can more easily supply their own redisplay functions. */
 extern char *rl_display_prompt;
+
+/* The right-justified prompt string, if any.  This is set by
+   rl_set_rprompt (), and should not be assigned to directly. */
+extern char *rl_rprompt;
+extern int rl_visible_rprompt_length;
 
 /* The line buffer that is in use. */
 extern char *rl_line_buffer;

@@ -587,6 +587,7 @@ extern char *_rl_term_dc;
 extern char *_rl_term_cr;
 extern char *_rl_term_IC;
 extern char *_rl_term_forward_char;
+extern char *_rl_term_ch;
 extern int _rl_screenheight;
 extern int _rl_screenwidth;
 extern int _rl_screenchars;
