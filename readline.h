@@ -711,7 +711,7 @@ extern const char *rl_basic_word_break_characters_without_backslash;
 /* The list of characters that signal a break between words for
    rl_complete_internal.  The default list is the contents of
    rl_basic_word_break_characters.  */
-extern /*const*/ char *rl_completer_word_break_characters;
+extern const char *rl_completer_word_break_characters;
 
 /* Hook function to allow an application to set the completion word
    break characters before readline breaks up the line.  Allows
@@ -971,7 +971,7 @@ struct readline_state {
   rl_compentry_func_t *menuentryfunc;
   rl_compignore_func_t *ignorefunc;
   rl_completion_func_t *attemptfunc;
-  char *wordbreakchars;
+  const char *wordbreakchars;
 
   /* options state */
 
