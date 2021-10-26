@@ -297,6 +297,7 @@ int _rl_page_completions = 1;
    completer routine.  The contents of this variable is what breaks words
    in the shell, i.e. " \t\n\"\\'`@$><=" */
 const char *rl_basic_word_break_characters = " \t\n\"\\'`@$><=;|&{("; /* }) */
+const char *rl_basic_word_break_characters_without_backslash = " \t\n\"'`@$><=;|&{("; /* }) */
 
 /* List of basic quoting characters. */
 const char *rl_basic_quote_characters = "\"'";
@@ -304,7 +305,7 @@ const char *rl_basic_quote_characters = "\"'";
 /* The list of characters that signal a break between words for
    rl_complete_internal.  The default list is the contents of
    rl_basic_word_break_characters.  */
-/*const*/ char *rl_completer_word_break_characters = (/*const*/ char *)NULL;
+const char *rl_completer_word_break_characters = (const char *)NULL;
 
 /* Hook function to allow an application to set the completion word
    break characters before readline breaks up the line.  Allows
@@ -634,7 +635,7 @@ stat_char (char *filename)
 
   character = 0;
   if (S_ISDIR (finfo.st_mode))
-    character = '/';
+    character = rl_preferred_path_separator;
 #if defined (S_ISCHR)
   else if (S_ISCHR (finfo.st_mode))
     character = '%';
@@ -723,7 +724,7 @@ printable_part (char *pathname)
   if (rl_filename_completion_desired == 0)	/* don't need to do anything */
     return (pathname);
 
-  temp = strrchr (pathname, '/');
+  temp = rl_last_path_separator (pathname);
 #if defined (__MSDOS__) || defined (_WIN32)
   if (temp == 0 && ISALPHA ((unsigned char)pathname[0]) && pathname[1] == ':')
     temp = pathname + 1;
@@ -740,9 +741,9 @@ printable_part (char *pathname)
   else if (temp[1] == '\0')
     {
       for (x = temp - 1; x > pathname; x--)
-        if (*x == '/')
+        if (rl_is_path_separator (*x))
           break;
-      return ((*x == '/') ? x + 1 : pathname);
+      return (rl_is_path_separator (*x) ? x + 1 : pathname);
     }
   else
     return ++temp;
@@ -757,7 +758,7 @@ fnwidth (const char *string)
   mbstate_t ps;
   int left, w;
   size_t clen;
-  wchar_t wc;
+  WCHAR_T wc;
 
   left = strlen (string) + 1;
   memset (&ps, 0, sizeof (mbstate_t));
@@ -774,7 +775,7 @@ fnwidth (const char *string)
       else
 	{
 #if defined (HANDLE_MULTIBYTE)
-	  clen = mbrtowc (&wc, string + pos, left - pos, &ps);
+	  clen = MBRTOWC (&wc, string + pos, left - pos, &ps);
 	  if (MB_INVALIDCH (clen))
 	    {
 	      width++;
@@ -812,7 +813,7 @@ fnprint (const char *to_print, int prefix_bytes, const char *real_pathname)
   const char *end;
   size_t tlen;
   int width;
-  wchar_t wc;
+  WCHAR_T wc;
 
   print_len = strlen (to_print);
   end = to_print + print_len + 1;
@@ -880,7 +881,7 @@ fnprint (const char *to_print, int prefix_bytes, const char *real_pathname)
       else
 	{
 #if defined (HANDLE_MULTIBYTE)
-	  tlen = mbrtowc (&wc, s, end - s, &ps);
+	  tlen = MBRTOWC (&wc, s, end - s, &ps);
 	  if (MB_INVALIDCH (tlen))
 	    {
 	      tlen = 1;
@@ -934,6 +935,7 @@ print_filename (char *to_print, char *full_pathname, int prefix_bytes)
 {
   int printed_len, extension_char, slen, tlen;
   char *s, c, *new_full_pathname, *dn;
+  char tmp_slash[3];
 
   extension_char = 0;
 #if defined (COLOR_SUPPORT)
@@ -966,13 +968,26 @@ print_filename (char *to_print, char *full_pathname, int prefix_bytes)
 	     bash directory completion hook, for example, it will expand it
 	     to the current directory.  We just want the `/'. */
 	  if (full_pathname == 0 || *full_pathname == 0)
-	    dn = "/";
-	  else if (full_pathname[0] != '/')
+	    {
+	      tmp_slash[0] = rl_preferred_path_separator;
+	      tmp_slash[1] = '\0';
+	      dn = tmp_slash;
+	    }
+	  else if (!rl_is_path_separator (full_pathname[0]))
 	    dn = full_pathname;
 	  else if (full_pathname[1] == 0)
-	    dn = "//";		/* restore trailing slash to `//' */
-	  else if (full_pathname[1] == '/' && full_pathname[2] == 0)
-	    dn = "/";		/* don't turn /// into // */
+	    {
+	      tmp_slash[0] = rl_preferred_path_separator;
+	      tmp_slash[1] = rl_preferred_path_separator;
+	      tmp_slash[2] = '\0';
+	      dn = tmp_slash;	/* restore trailing slash to `//' */
+	    }
+	  else if (rl_is_path_separator (full_pathname[1]) && full_pathname[2] == 0)
+	    {
+	      tmp_slash[0] = rl_preferred_path_separator;
+	      tmp_slash[1] = '\0';
+	      dn = tmp_slash;	/* don't turn /// into // */
+	    }
 	  else
 	    dn = full_pathname;
 	  s = tilde_expand (dn);
@@ -983,10 +998,10 @@ print_filename (char *to_print, char *full_pathname, int prefix_bytes)
 	  tlen = strlen (to_print);
 	  new_full_pathname = (char *)xmalloc (slen + tlen + 2);
 	  strcpy (new_full_pathname, s);
-	  if (s[slen - 1] == '/')
+	  if (rl_is_path_separator (s[slen - 1]))
 	    slen--;
 	  else
-	    new_full_pathname[slen] = '/';
+	    new_full_pathname[slen] = rl_preferred_path_separator;
 	  strcpy (new_full_pathname + slen + 1, to_print);
 
 #if defined (VISIBLE_STATS)
@@ -1005,7 +1020,7 @@ print_filename (char *to_print, char *full_pathname, int prefix_bytes)
 		  new_full_pathname = dn;
 		}
 	      if (path_isdir (new_full_pathname))
-		extension_char = '/';
+		extension_char = rl_preferred_path_separator;
 	    }
 
 	  /* Move colored-stats code inside fnprint() */
@@ -1026,7 +1041,7 @@ print_filename (char *to_print, char *full_pathname, int prefix_bytes)
 	  else
 #endif
 	    if (_rl_complete_mark_directories && path_isdir (s))
-	      extension_char = '/';
+	      extension_char = rl_preferred_path_separator;
 
 	  /* Move colored-stats code inside fnprint() */
 #if defined (COLOR_SUPPORT)
@@ -1078,7 +1093,8 @@ char
 _rl_find_completion_word (int *fp, int *dp)
 {
   int scan, end, found_quote, delimiter, pass_next, isbrk;
-  char quote_char, *brkchars;
+  char quote_char;
+  const char *brkchars;
 
   end = rl_point;
   found_quote = delimiter = 0;
@@ -1088,7 +1104,19 @@ _rl_find_completion_word (int *fp, int *dp)
   if (rl_completion_word_break_hook)
     brkchars = (*rl_completion_word_break_hook) ();
   if (brkchars == 0)
-    brkchars = rl_completer_word_break_characters;
+    {
+      if (rl_backslash_path_sep)
+	{
+	  if (rl_completer_word_break_characters == rl_basic_word_break_characters)
+	    rl_completer_word_break_characters = rl_basic_word_break_characters_without_backslash;
+	}
+      else
+	{
+	  if (rl_completer_word_break_characters == rl_basic_word_break_characters_without_backslash)
+	    rl_completer_word_break_characters = rl_basic_word_break_characters;
+	}
+      brkchars = rl_completer_word_break_characters;
+    }
 
   if (rl_completer_quote_characters)
     {
@@ -1098,21 +1126,25 @@ _rl_find_completion_word (int *fp, int *dp)
       /* FOUND_QUOTE is set so we know what kind of quotes we found. */
       for (scan = pass_next = 0; scan < end; scan = MB_NEXTCHAR (rl_line_buffer, scan, 1, MB_FIND_ANY))
 	{
-	  if (pass_next)
+	  /* Backslash escapes, unless it's a path separator. */
+	  if (!rl_backslash_path_sep)
 	    {
-	      pass_next = 0;
-	      continue;
-	    }
+	      if (pass_next)
+		{
+		  pass_next = 0;
+		  continue;
+		}
 
-	  /* Shell-like semantics for single quotes -- don't allow backslash
-	     to quote anything in single quotes, especially not the closing
-	     quote.  If you don't like this, take out the check on the value
-	     of quote_char. */
-	  if (quote_char != '\'' && rl_line_buffer[scan] == '\\')
-	    {
-	      pass_next = 1;
-	      found_quote |= RL_QF_BACKSLASH;
-	      continue;
+	      /* Shell-like semantics for single quotes -- don't allow backslash
+		 to quote anything in single quotes, especially not the closing
+		 quote.  If you don't like this, take out the check on the value
+		 of quote_char. */
+	      if (quote_char != '\'' && rl_line_buffer[scan] == '\\')
+		{
+		  pass_next = 1;
+		  found_quote |= RL_QF_BACKSLASH;
+		  continue;
+		}
 	    }
 
 	  if (quote_char != '\0')
@@ -1321,7 +1353,7 @@ compute_lcd_of_matches (char **match_list, int matches, const char *text)
   int v;
   size_t v1, v2;
   mbstate_t ps1, ps2;
-  wchar_t wc1, wc2;
+  WCHAR_T wc1, wc2;
 #endif
 
   /* If only one match, just use that.  Otherwise, compare each
@@ -1337,6 +1369,8 @@ compute_lcd_of_matches (char **match_list, int matches, const char *text)
   for (i = 1, low = 100000; i < matches; i++)
     {
 #if defined (HANDLE_MULTIBYTE)
+      int mi0_len = strlen (match_list[i]);
+      int mi1_len = strlen (match_list[i + 1]);
       if (MB_CUR_MAX > 1 && rl_byte_oriented == 0)
 	{
 	  memset (&ps1, 0, sizeof (mbstate_t));
@@ -1353,8 +1387,8 @@ compute_lcd_of_matches (char **match_list, int matches, const char *text)
 #if defined (HANDLE_MULTIBYTE)
 	    if (MB_CUR_MAX > 1 && rl_byte_oriented == 0)
 	      {
-		v1 = mbrtowc(&wc1, match_list[i]+si, strlen (match_list[i]+si), &ps1);
-		v2 = mbrtowc (&wc2, match_list[i+1]+si, strlen (match_list[i+1]+si), &ps2);
+		v1 = MBRTOWC (&wc1, match_list[i]+si, mi0_len-si, &ps1);
+		v2 = MBRTOWC (&wc2, match_list[i+1]+si, mi1_len-si, &ps2);
 		if (MB_INVALIDCH (v1) || MB_INVALIDCH (v2))
 		  {
 		    if (c1 != c2)	/* do byte comparison */
@@ -1364,7 +1398,7 @@ compute_lcd_of_matches (char **match_list, int matches, const char *text)
 		if (_rl_completion_case_fold)
 		  {
 		    wc1 = towlower (wc1);
-		   wc2 = towlower (wc2);
+		    wc2 = towlower (wc2);
 		  }
 		if (wc1 != wc2)
 		  break;
@@ -1539,7 +1573,7 @@ rl_display_match_list (char **matches, int len, int max)
     {
       t = printable_part (matches[0]);
       /* check again in case of /usr/src/ */
-      temp = rl_filename_completion_desired ? strrchr (t, '/') : 0;
+      temp = rl_filename_completion_desired ? rl_last_path_separator (t) : 0;
       common_length = temp ? fnwidth (temp) : fnwidth (t);
       sind = temp ? strlen (temp) : strlen (t);
       if (common_length > max || sind > max)
@@ -1554,7 +1588,7 @@ rl_display_match_list (char **matches, int len, int max)
   else if (_rl_colored_completion_prefix > 0)
     {
       t = printable_part (matches[0]);
-      temp = rl_filename_completion_desired ? strrchr (t, '/') : 0;
+      temp = rl_filename_completion_desired ? rl_last_path_separator (t) : 0;
       common_length = temp ? fnwidth (temp) : fnwidth (t);
       sind = temp ? RL_STRLEN (temp+1) : RL_STRLEN (t);		/* want portion after final slash */
       if (common_length > max || sind > max)
@@ -1888,10 +1922,13 @@ append_to_match (char *text, int delimiter, int quote_char, int nontrivial_match
 	      /* This is clumsy.  Avoid putting in a double slash if point
 		 is at the end of the line and the previous character is a
 		 slash. */
-	      if (rl_point && rl_line_buffer[rl_point] == '\0' && rl_line_buffer[rl_point - 1] == '/')
+	      if (rl_point && rl_line_buffer[rl_point] == '\0' && rl_is_path_separator (rl_line_buffer[rl_point - 1]))
 		;
-	      else if (rl_line_buffer[rl_point] != '/')
-		rl_insert_text ("/");
+	      else if (!rl_is_path_separator (rl_line_buffer[rl_point]))
+		{
+		  char tmp_slash[2] = { rl_preferred_path_separator };
+		  rl_insert_text (tmp_slash);
+		}
 	    }
 	}
 #ifdef S_ISLNK
@@ -2330,7 +2367,7 @@ complete_fncmp (const char *convfn, int convlen, const char *filename, int filen
 #if defined (HANDLE_MULTIBYTE)
   size_t v1, v2;
   mbstate_t ps1, ps2;
-  wchar_t wc1, wc2;
+  WCHAR_T wc1, wc2;
 #endif
 
 #if defined (HANDLE_MULTIBYTE)
@@ -2357,8 +2394,8 @@ complete_fncmp (const char *convfn, int convlen, const char *filename, int filen
 	{
 	  do
 	    {
-	      v1 = mbrtowc (&wc1, s1, convlen, &ps1);
-	      v2 = mbrtowc (&wc2, s2, filename_len, &ps2);
+	      v1 = MBRTOWC (&wc1, s1, convlen, &ps1);
+	      v2 = MBRTOWC (&wc2, s2, filename_len, &ps2);
 	      if (v1 == 0 && v2 == 0)
 		return 1;
 	      else if (MB_INVALIDCH (v1) || MB_INVALIDCH (v2))
@@ -2407,8 +2444,8 @@ complete_fncmp (const char *convfn, int convlen, const char *filename, int filen
 	{
 	  do
 	    {
-	      v1 = mbrtowc (&wc1, s1, convlen, &ps1);
-	      v2 = mbrtowc (&wc2, s2, filename_len, &ps2);
+	      v1 = MBRTOWC (&wc1, s1, convlen, &ps1);
+	      v2 = MBRTOWC (&wc2, s2, filename_len, &ps2);
 	      if (v1 == 0 && v2 == 0)
 		return 1;
 	      else if (MB_INVALIDCH (v1) || MB_INVALIDCH (v2))
@@ -2482,12 +2519,12 @@ rl_filename_completion_function (const char *text, int state)
 	text = ".";
       dirname = savestring (text);
 
-      temp = strrchr (dirname, '/');
+      temp = rl_last_path_separator (dirname);
 
 #if defined (__MSDOS__) || defined (_WIN32)
       /* special hack for //X/... */
-      if (dirname[0] == '/' && dirname[1] == '/' && ISALPHA ((unsigned char)dirname[2]) && dirname[3] == '/')
-        temp = strrchr (dirname + 3, '/');
+      if (rl_is_path_separator (dirname[0]) && rl_is_path_separator (dirname[1]) && ISALPHA ((unsigned char)dirname[2]) && rl_is_path_separator (dirname[3]))
+        temp = rl_last_path_separator (dirname + 3);
 #endif
 
       if (temp)
@@ -2641,9 +2678,9 @@ rl_filename_completion_function (const char *text, int state)
 	      strcpy (temp, dirname);
 	      /* Canonicalization cuts off any final slash present.  We
 		 may need to add it back. */
-	      if (dirname[dirlen - 1] != '/')
+	      if (!rl_is_path_separator (dirname[dirlen - 1]))
 	        {
-	          temp[dirlen++] = '/';
+	          temp[dirlen++] = rl_preferred_path_separator;
 	          temp[dirlen] = '\0';
 	        }
 	    }
@@ -2653,8 +2690,8 @@ rl_filename_completion_function (const char *text, int state)
 	      temp = (char *)xmalloc (2 + dirlen + D_NAMLEN (entry));
 	      strcpy (temp, users_dirname);
 	      /* Make sure that temp has a trailing slash here. */
-	      if (users_dirname[dirlen - 1] != '/')
-		temp[dirlen++] = '/';
+	      if (!rl_is_path_separator (users_dirname[dirlen - 1]))
+		temp[dirlen++] = rl_preferred_path_separator;
 	    }
 
 	  strcpy (temp + dirlen, convfn);

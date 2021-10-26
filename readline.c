@@ -133,6 +133,11 @@ int rl_dispatching;
 /* Non-zero if the previous command was a kill command. */
 int _rl_last_command_was_kill = 0;
 
+/* Value of rl_last_func before rl_remove_history was used.  So that the
+   history commands can tell which history search mode is effectively
+   active even when rl_remove_history is used. */
+rl_command_func_t *rl_remove_history_last_func = (rl_command_func_t *)NULL;
+
 /* The current value of the numeric argument specified by the user. */
 int rl_numeric_arg = 1;
 
@@ -187,6 +192,10 @@ int _rl_echoing_p = 0;
 /* Current prompt. */
 char *rl_prompt = (char *)NULL;
 int rl_visible_prompt_length = 0;
+
+/* Optional right-justified prompt string. */
+char *rl_rprompt = (char *)NULL;
+int rl_visible_rprompt_length = 0;
 
 /* Set to non-zero by calling application if it has already printed rl_prompt
    and does not want readline to do it the first time. */
@@ -511,6 +520,11 @@ readline_internal_teardown (int eof)
 void
 _rl_internal_char_cleanup (void)
 {
+  if (_rl_keep_mark_active)
+    _rl_keep_mark_active = 0;
+  else if (rl_mark_active_p ())
+    rl_deactivate_mark ();
+
 #if defined (VI_MODE)
   /* In vi mode, when you exit insert mode, the cursor moves back
      over the previous character.  We explicitly check for that here. */
@@ -667,11 +681,6 @@ readline_internal_charloop (void)
 	 a prefix command, so nothing has changed yet. */
       if (rl_pending_input == 0 && lk == _rl_last_command_was_kill)
 	_rl_last_command_was_kill = 0;
-
-      if (_rl_keep_mark_active)
-        _rl_keep_mark_active = 0;
-      else if (rl_mark_active_p ())
-        rl_deactivate_mark ();
 
       _rl_internal_char_cleanup ();
 
@@ -1283,7 +1292,7 @@ readline_initialize_everything (void)
   /* If the completion parser's default word break characters haven't
      been set yet, then do so now. */
   if (rl_completer_word_break_characters == (char *)NULL)
-    rl_completer_word_break_characters = (char *)rl_basic_word_break_characters;
+    rl_completer_word_break_characters = rl_basic_word_break_characters;
 
 #if defined (COLOR_SUPPORT)
   if (_rl_colored_stats || _rl_colored_completion_prefix)

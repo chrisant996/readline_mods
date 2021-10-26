@@ -129,11 +129,13 @@ extern int rl_char_search PARAMS((int, int));
 extern int rl_backward_char_search PARAMS((int, int));
 
 /* Bindable commands for readline's interface to the command history. */
+extern int rl_add_history PARAMS((int, int));
 extern int rl_beginning_of_history PARAMS((int, int));
 extern int rl_end_of_history PARAMS((int, int));
 extern int rl_get_next_history PARAMS((int, int));
 extern int rl_get_previous_history PARAMS((int, int));
 extern int rl_operate_and_get_next PARAMS((int, int));
+extern int rl_remove_history PARAMS((int, int));
 
 /* Bindable commands for managing the mark and region. */
 extern int rl_set_mark PARAMS((int, int));
@@ -297,6 +299,8 @@ extern char *readline PARAMS((const char *));
 
 extern int rl_set_prompt PARAMS((const char *));
 extern int rl_expand_prompt PARAMS((char *));
+extern const char *rl_get_local_prompt_prefix PARAMS((void));
+extern int rl_set_rprompt PARAMS((const char *));
 
 extern int rl_initialize PARAMS((void));
 
@@ -472,6 +476,10 @@ extern int rl_set_paren_blink_timeout PARAMS((int));
 
 extern void rl_clear_history PARAMS((void));
 
+/* Returns true if rl_operate_and_get_next has set a saved history
+   offset, so that the host knows not to rearrange history entries yet. */
+extern int rl_has_saved_history PARAMS((void));
+
 /* Undocumented. */
 extern int rl_maybe_save_line PARAMS((void));
 extern int rl_maybe_unsave_line PARAMS((void));
@@ -486,6 +494,10 @@ extern char *rl_username_completion_function PARAMS((const char *, int));
 extern char *rl_filename_completion_function PARAMS((const char *, int));
 
 extern int rl_completion_mode PARAMS((rl_command_func_t *));
+
+/* Path separators. */
+extern int rl_is_path_separator PARAMS((char c));
+extern char *rl_last_path_separator PARAMS((const char *string));
 
 #if 0
 /* Backwards compatibility (compat.c).  These will go away sometime. */
@@ -538,6 +550,11 @@ extern char *rl_prompt;
 /* The prompt string that is actually displayed by rl_redisplay.  Public so
    applications can more easily supply their own redisplay functions. */
 extern char *rl_display_prompt;
+
+/* The right-justified prompt string, if any.  This is set by
+   rl_set_rprompt (), and should not be assigned to directly. */
+extern char *rl_rprompt;
+extern int rl_visible_rprompt_length;
 
 /* The line buffer that is in use. */
 extern char *rl_line_buffer;
@@ -602,6 +619,17 @@ extern rl_hook_func_t *rl_signal_event_hook;
 /* The address of a function to call if Readline needs to know whether or not
    there is data available from the current input source. */
 extern rl_hook_func_t *rl_input_available_hook;
+
+/* Called when rl_add_history adds a history line. */
+extern rl_history_hook_func_t *rl_add_history_hook;
+/* Called when rl_remove_history removes a history line. */
+extern rl_history_hook_func_t *rl_remove_history_hook;
+
+/* If non-zero, adds backslash as a path separator. */
+extern int rl_backslash_path_sep;
+
+/* Filename completion inserts this as the path separator character. */
+extern char rl_preferred_path_separator;
 
 /* The address of the function to call to fetch a character from the current
    Readline input stream */
@@ -685,11 +713,12 @@ extern rl_completion_func_t *rl_attempted_completion_function;
    completer routine.  The initial contents of this variable is what
    breaks words in the shell, i.e. "n\"\\'`@$>". */
 extern const char *rl_basic_word_break_characters;
+extern const char *rl_basic_word_break_characters_without_backslash;
 
 /* The list of characters that signal a break between words for
    rl_complete_internal.  The default list is the contents of
    rl_basic_word_break_characters.  */
-extern /*const*/ char *rl_completer_word_break_characters;
+extern const char *rl_completer_word_break_characters;
 
 /* Hook function to allow an application to set the completion word
    break characters before readline breaks up the line.  Allows
@@ -949,7 +978,7 @@ struct readline_state {
   rl_compentry_func_t *menuentryfunc;
   rl_compignore_func_t *ignorefunc;
   rl_completion_func_t *attemptfunc;
-  char *wordbreakchars;
+  const char *wordbreakchars;
 
   /* options state */
 

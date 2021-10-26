@@ -1831,6 +1831,7 @@ static const struct {
   { "prefer-visible-bell",	&_rl_prefer_visible_bell,	V_SPECIAL },
   { "print-completions-horizontally", &_rl_print_completions_horizontally, 0 },
   { "revert-all-at-newline",	&_rl_revert_all_at_newline,	0 },
+  { "search-ignore-case",	&_rl_search_case_fold,		0 },
   { "show-all-if-ambiguous",	&_rl_complete_show_all,		0 },
   { "show-all-if-unmodified",	&_rl_complete_show_unmodified,	0 },
   { "show-mode-in-prompt",	&_rl_show_mode_in_prompt,	0 },
@@ -2546,6 +2547,15 @@ _rl_get_keyname (int key)
       keyname[i++] = '2';
       c -= 128;
       keyname[i++] = (c / 8) + '0';
+      c = (c % 8) + '0';
+    }
+  /* The modern encoding is UTF8, not ISO Latin 1.  Print octal escape
+     sequences so the output is valid UTF8.  This changes C. */
+  else if (c >= 160)
+    {
+      keyname[i++] = '\\';
+      keyname[i++] = '0' + ((((unsigned char)c) >> 6) & 0x07);
+      keyname[i++] = '0' + ((((unsigned char)c) >> 3) & 0x07);
       c = (c % 8) + '0';
     }
 

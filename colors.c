@@ -239,8 +239,10 @@ _rl_print_color_indicator (const char *f)
       else if (S_ISSOCK (mode))
         colored_filetype = C_SOCK;
 #endif
+#if defined (S_ISBLK)
       else if (S_ISBLK (mode))
         colored_filetype = C_BLK;
+#endif
       else if (S_ISCHR (mode))
         colored_filetype = C_CHR;
       else

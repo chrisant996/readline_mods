@@ -47,6 +47,11 @@
 #include "histlib.h"
 #include "xmalloc.h"
 
+/* Enable case insensitive history search, based on runtime config. */
+extern int find_streqn (const char *a, const char *b, int n);
+#undef STREQN
+#define STREQN(a, b, n) (find_streqn(a, b, n))
+
 /* The list of alternate characters that can delimit a history search
    string. */
 char *history_search_delimiter_chars = (char *)NULL;
@@ -242,7 +247,7 @@ _hs_history_patsearch (const char *string, int direction, int flags)
       pat[len+1] = '\0';
     }
 #else
-  pat = string;
+  pat = (char*)string;
 #endif
 
   ret = history_search_internal (pat, direction, flags|PATTERN_SEARCH);

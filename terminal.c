@@ -134,6 +134,7 @@ char *_rl_term_DC;
 
 /* How to move forward a char, non-destructively */
 char *_rl_term_forward_char;
+char *_rl_term_ch;
 
 /* How to go up a line. */
 char *_rl_term_up;
@@ -406,6 +407,7 @@ static const struct _tc_string tc_strings[] =
   { "E3", &_rl_term_clrscroll },
   { "IC", &_rl_term_IC },
   { "ce", &_rl_term_clreol },
+  { "ch", &_rl_term_ch },
   { "cl", &_rl_term_clrpag },
   { "cr", &_rl_term_cr },
   { "dc", &_rl_term_dc },
